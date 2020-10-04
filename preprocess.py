@@ -65,9 +65,48 @@ def recorded_data_test():
 
 ############..........define function for live record testing:
 def live_record_test():
-    pass
+    CHUNK = 1024
+    FORMAT = pyaudio.paFloat32
+    CHANNELS = 1
+    fs = 44100
+    RECORD_SECONDS = 5
+    WAVE_OUTPUT_FILENAME = "output.wav"
 
+    p = pyaudio.PyAudio()
 
+    stream1 = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=fs,
+                input=True,
+                frames_per_buffer=CHUNK)
+
+    stream2 = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=fs,
+                output=True,
+                frames_per_buffer=CHUNK)
+
+    print("* recording")
+
+    raw_data = []
+    for i in range(0, int(fs / CHUNK * RECORD_SECONDS)):
+        data = stream1.read(CHUNK)
+            
+    ########################
+        stream2.write(data)
+        dd = np.fromstring(data, 'Float32')
+        raw_data = np.append(raw_data,dd)
+    
+    print("* done recording")
+
+    stream1.stop_stream()
+    stream1.close()
+    stream2.stop_stream()
+    stream2.close()
+    p.terminate()
+
+    processed_data = custum_filter(raw_data, fs)
+    return (raw_data,processed_data,fs)
     
 ###########........main function of the program: 
 mode = ask_mode()
