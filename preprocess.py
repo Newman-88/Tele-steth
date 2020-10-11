@@ -32,7 +32,7 @@ def custum_filter(raw_data, fs):
 
     lowcut = 10
     highcut = 30
-    order = 1
+    order = 2
     processed_data = butter_bandpass_filter(raw_data, lowcut, highcut, fs, order)
 
     

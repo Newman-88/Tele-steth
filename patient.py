@@ -3,7 +3,7 @@ import threading
 import pyaudio
 
 ####### Import custum_filter function from preprocess.py for data processing 
-from preprocess import custum_filter
+#from preprocess import custum_filter
 
 ### Define class which would stream the data 
 class Client:
@@ -51,7 +51,8 @@ class Client:
             try:
                 data = self.recording_stream.read(1024)
     ##########...................Processing data before sending to the server:...........................###################################
-                processed_data = custum_filter(data, rate)
+                #processed_data = custum_filter(data, rate)
+                processed_data = data
                 self.s.sendall(processed_data)
             except:
                 pass
