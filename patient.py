@@ -1,9 +1,10 @@
 import socket
 import threading
 import pyaudio
+import numpy as np
 
 ####### Import custum_filter function from preprocess.py for data processing 
-#from preprocess import custum_filter
+from preprocess import custum_filter
 
 ### Define class which would stream the data 
 class Client:
@@ -24,18 +25,18 @@ class Client:
         chunk_size = 1024 # 512
         audio_format = pyaudio.paFloat32
         channels = 1
-        rate = 20000
+        rate = 2048
 
         # initialise microphone recording
         self.p = pyaudio.PyAudio()
-        self.playing_stream = self.p.open(format=audio_format, channels=channels, rate=rate, output=True, frames_per_buffer=chunk_size)
+        #self.playing_stream = self.p.open(format=audio_format, channels=channels, rate=rate, output=True, frames_per_buffer=chunk_size)
         self.recording_stream = self.p.open(format=audio_format, channels=channels, rate=rate, input=True, frames_per_buffer=chunk_size)
         
         print("Connected to Server")
 
         # start threads
-        receive_thread = threading.Thread(target=self.receive_server_data).start()
-        self.send_data_to_server()
+        #receive_thread = threading.Thread(target=self.receive_server_data).start()
+        self.send_data_to_server(rate)
 
     def receive_server_data(self):
         while True:
@@ -46,13 +47,14 @@ class Client:
                 pass
 
     ### Sending the data to server 
-    def send_data_to_server(self):
+    def send_data_to_server(self, rate):
         while True:
             try:
                 data = self.recording_stream.read(1024)
+                dd = np.fromstring(data, 'Float32')
     ##########...................Processing data before sending to the server:...........................###################################
-                #processed_data = custum_filter(data, rate)
-                processed_data = data
+                processed_data = custum_filter(dd, rate)
+                processed_data.tobytes()
                 self.s.sendall(processed_data)
             except:
                 pass

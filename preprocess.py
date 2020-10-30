@@ -32,12 +32,13 @@ def custum_filter(raw_data, fs):
 
     lowcut = 20
     highcut = 150
-    order = 6
+    order = 4
 
     ## normalizing the data
-    data = raw_data/max(raw_data)
-    processed_data = butter_bandpass_filter(data, lowcut, highcut, fs, order)
-
+    #raw_data = raw_data/max(raw_data)
+    processed_data = butter_bandpass_filter(raw_data, lowcut, highcut, fs, order)
+    processed_data = processed_data/max(processed_data)
+    processed_data = processed_data.astype('float32')
     
     
     return (processed_data)
@@ -64,16 +65,16 @@ def recorded_data_test():
 
     processed_data = custum_filter(raw_data, fs)
 
-    return (raw_data,processed_data,fs)
+    return (raw_data,processed_data,fs, processed_data)
 
 ############..........define function for live record testing:
 def live_record_test():
-    CHUNK = 1024
+    CHUNK = 1028
     FORMAT = pyaudio.paFloat32
     CHANNELS = 1
-    fs = 44100
-    RECORD_SECONDS = 5
-    WAVE_OUTPUT_FILENAME = "output.wav"
+    fs = 2056
+    RECORD_SECONDS = 10
+   
 
     p = pyaudio.PyAudio()
 
@@ -93,14 +94,22 @@ def live_record_test():
     print("* recording")
 
     raw_data = []
+    filt_data_test = []
     for i in range(0, int(fs / CHUNK * RECORD_SECONDS)):
         data = stream1.read(CHUNK)
             
     ########################
-        stream2.write(data)
         dd = np.fromstring(data, 'Float32')
         raw_data = np.append(raw_data,dd)
-    
+
+        filt_data = custum_filter(dd, fs)
+        #filt_data.tobytes()
+        stream2.write(filt_data)
+        
+        filt_data_test = np.append(filt_data_test, filt_data)
+
+        
+        
     print("* done recording")
 
     stream1.stop_stream()
@@ -110,7 +119,8 @@ def live_record_test():
     p.terminate()
 
     processed_data = custum_filter(raw_data, fs)
-    return (raw_data,processed_data,fs)
+    
+    return (raw_data,processed_data,fs, filt_data_test)
     
 ###########........main function of the program:
 def main(): 
@@ -119,26 +129,35 @@ def main():
     if mode ==1:
         raw_data,processed_data,fs = recorded_data_test()
     else:
-        raw_data,processed_data,fs = live_record_test()
+        raw_data,processed_data,fs,filt_data_test = live_record_test()
 
 
     print(type(raw_data[0]))
     print(type(processed_data[0]))
+    print(type(filt_data_test[0]))
     ####....Displaying both raw_data and processed_data:
-    plt.subplot(2,1,1)
+    plt.subplot(3,1,1)
     plt.plot(raw_data)
     plt.title("Raw_data")
 
-    plt.subplot(2,1,2)
+    plt.subplot(3,1,2)
+    plt.plot(filt_data_test)
+    plt.title("Chunk_Processed_data")
+    
+    plt.subplot(3,1,3)
     plt.plot(processed_data)
     plt.title("Processed_data")
-
     plt.show()
 
     ####....play both sounds one by one:
     print("Playing raw_sound")
     sd.play(raw_data,fs)
     sd.wait()
+
+    print("Playing chunk processed_sound")
+    sd.play(filt_data_test,fs)
+    sd.wait()
+
 
     print("Playing processed_sound")
     sd.play(processed_data,fs)
