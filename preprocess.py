@@ -5,7 +5,7 @@ import struct
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
-from scipy.signal import butter, lfilter
+from scipy.signal import butter, sosfilt, sosfreqz
 
 ##### The program is written to test the "effectiveness of the custum_filter" function.
 ##### The testing can be done either by already recorded data (rawdata_1.wav, etc) or by live recording using DIY diaphragm.
@@ -30,28 +30,31 @@ def custum_filter(raw_data, fs):
     '''The main function which does filtering of the raw data.
     Inputs are raw data chunk and sampling frequency and outpus processed data'''
 
-    lowcut = 10
-    highcut = 30
-    order = 2
-    processed_data = butter_bandpass_filter(raw_data, lowcut, highcut, fs, order)
+    lowcut = 20
+    highcut = 150
+    order = 6
+
+    ## normalizing the data
+    data = raw_data/max(raw_data)
+    processed_data = butter_bandpass_filter(data, lowcut, highcut, fs, order)
 
     
-    ## normalizing the data
-    processed_data = processed_data/max(processed_data)
+    
     return (processed_data)
 
-def butter_bandpass(lowcut, highcut, fs, order=5):
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
-    return b, a
 
 
-def butter_bandpass_filter(data, lowcut, highcut, fs, order=5):
-    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
+def butter_bandpass(lowcut, highcut, fs, order):
+        nyq = 0.5 * fs
+        low = lowcut / nyq
+        high = highcut / nyq
+        sos = butter(order, [low, high], analog=False, btype='band', output='sos')
+        return sos
+
+def butter_bandpass_filter(data, lowcut, highcut, fs, order):
+        sos = butter_bandpass(lowcut, highcut, fs, order=order)
+        y = sosfilt(sos, data)
+        return y
 ##
 ##---------------------------------------------------------------------------------
 ############...........define function for recorded data testing:
@@ -78,6 +81,7 @@ def live_record_test():
                 channels=CHANNELS,
                 rate=fs,
                 input=True,
+                input_device_index = 1,
                 frames_per_buffer=CHUNK)
 
     stream2 = p.open(format=FORMAT,
@@ -108,35 +112,39 @@ def live_record_test():
     processed_data = custum_filter(raw_data, fs)
     return (raw_data,processed_data,fs)
     
-###########........main function of the program: 
-mode = ask_mode()
-print(mode)
-if mode ==1:
-    raw_data,processed_data,fs = recorded_data_test()
-else:
-    raw_data,processed_data,fs = live_record_test()
+###########........main function of the program:
+def main(): 
+    mode = ask_mode()
+    print(mode)
+    if mode ==1:
+        raw_data,processed_data,fs = recorded_data_test()
+    else:
+        raw_data,processed_data,fs = live_record_test()
 
 
-print(type(raw_data[0]))
-print(type(processed_data[0]))
-####....Displaying both raw_data and processed_data:
-plt.subplot(2,1,1)
-plt.plot(raw_data)
-plt.title("Raw_data")
+    print(type(raw_data[0]))
+    print(type(processed_data[0]))
+    ####....Displaying both raw_data and processed_data:
+    plt.subplot(2,1,1)
+    plt.plot(raw_data)
+    plt.title("Raw_data")
 
-plt.subplot(2,1,2)
-plt.plot(processed_data)
-plt.title("Processed_data")
+    plt.subplot(2,1,2)
+    plt.plot(processed_data)
+    plt.title("Processed_data")
 
-plt.show()
+    plt.show()
 
-####....play both sounds one by one:
-print("Playing raw_sound")
-sd.play(raw_data,fs)
-sd.wait()
+    ####....play both sounds one by one:
+    print("Playing raw_sound")
+    sd.play(raw_data,fs)
+    sd.wait()
 
-print("Playing processed_sound")
-sd.play(processed_data,fs)
-sd.wait()
+    print("Playing processed_sound")
+    sd.play(processed_data,fs)
+    sd.wait()
 
-print("Finished Testing")
+    print("Finished Testing")
+
+if __name__ == "__main__":
+    main()
