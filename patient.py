@@ -24,7 +24,7 @@ class Client:
         chunk_size = 1024 # 512
         audio_format = pyaudio.paFloat32
         channels = 1
-        rate = 44100
+        rate = 20000
 
         # initialise microphone recording
         self.p = pyaudio.PyAudio()
