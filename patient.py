@@ -2,6 +2,7 @@ import socket
 import threading
 import pyaudio
 import numpy as np
+import sys
 
 ####### Import custum_filter function from preprocess.py for data processing 
 from preprocess import custum_filter
@@ -23,7 +24,7 @@ class Client:
                 print("Couldn't connect to server")
 
         chunk_size = 1024 # 512
-        audio_format = pyaudio.paFloat32
+        audio_format = pyaudio.paInt16
         channels = 1
         rate = 2048
 
@@ -51,11 +52,13 @@ class Client:
         while True:
             try:
                 data = self.recording_stream.read(1024)
-                dd = np.fromstring(data, 'Float32')
+                #dd = np.fromstring(data, 'Float32')
+                dd = np.frombuffer(data, dtype= np.int16)
     ##########...................Processing data before sending to the server:...........................###################################
                 processed_data = custum_filter(dd, rate)
                 processed_data.tobytes()
                 self.s.sendall(processed_data)
+                #print(sys.getsizeof(processed_data))
             except:
                 pass
 

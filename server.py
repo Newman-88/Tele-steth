@@ -42,7 +42,7 @@ class Server:
     def handle_client(self,c,addr):
         while 1:
             try:
-                data = c.recv(1024)
+                data = c.recv(2096)
                 self.broadcast(c, data)
             
             except socket.error:
