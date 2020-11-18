@@ -1,4 +1,9 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import socket
+import threading
+import pyaudio
+import numpy as np
+from preprocess import custum_filter
 
 
 class Ui_MainWindow(object):
@@ -105,6 +110,8 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+        self.connect_doc.clicked.connect(lambda: self.clicked())
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Telesthoscope-Patient_UI"))
@@ -122,6 +129,57 @@ class Ui_MainWindow(object):
         self.connect_doc.setText(_translate("MainWindow", "Connect to Doctor"))
         self.label_9.setText(_translate("MainWindow", "          (Not Connected)"))
 
+    def clicked(self):
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.chunk_size = 1024 # 512
+        self.audio_format = pyaudio.paInt16
+        self.channels = 1
+        self.rate = 2048
+        
+        if self.connect_doc.text() == "Connect to Doctor":
+        
+            try:
+                self.ip = self.ipaddress.text()
+                self.port_no = int(self.port.text())
+                self.s.connect((self.ip, self.port_no))
+                self.label_9.setText("             (Connected)")
+                self.connect_doc.setText("   Disconnect")
+                self.start()
+                
+            except:
+                self.label_9.setText("        (Incorrect Details)")
+
+        else:
+            self.s.close()
+            self.label_9.setText("         (Not Connected)")
+
+            self.connect_doc.setText("Connect to Doctor")
+
+    def start(self):
+
+        # initialise microphone recording
+        self.p = pyaudio.PyAudio()
+        #self.playing_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, output=True, frames_per_buffer=self.chunk_size)
+        self.recording_stream = self.p.open(format=self.audio_format, channels=self.channels, rate=self.rate, input=True, frames_per_buffer=self.chunk_size)
+        send_thread = threading.Thread(target=self.send_data_to_server)
+        send_thread.start()
+        #self.send_data_to_server()
+
+    def send_data_to_server(self):
+        while True:
+            try:
+                data = self.recording_stream.read(1024)
+                if self.comboBox.currentIndex()==0:
+                    dd = np.frombuffer(data, dtype= np.int16)
+    ##########...................Processing data before sending to the server:...........................###################################
+                    processed_data = custum_filter(dd, self.rate)
+                    processed_data.tobytes()
+                    self.s.sendall(processed_data)
+                else:
+                    self.s.sendall(data)
+                #print(sys.getsizeof(processed_data))
+            except:
+                pass    
 
 if __name__ == "__main__":
     import sys

@@ -36,10 +36,10 @@ def custum_filter(raw_data, fs):
     order = 6
 
     ## normalizing the data
-    raw_data = raw_data/max(abs(raw_data))
+    raw_data = raw_data/max(raw_data)
     processed_data = butter_bandpass_filter(raw_data, lowcut, highcut, fs, order)
     #processed_data = processed_data/max(abs(processed_data))
-    processed_data = processed_data*30000
+    processed_data = processed_data*10000
     processed_data = processed_data.astype('int16')
     
     
@@ -108,7 +108,7 @@ def live_record_test():
         filt_data = custum_filter(dd, fs)
         filt_data.tobytes()
 
-        stream2.write(filt_data)
+        stream2.write(data)
         filt_data_test = np.append(filt_data_test, filt_data)
 
         
