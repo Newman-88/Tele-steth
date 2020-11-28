@@ -1,6 +1,7 @@
 import socket
 import threading
 import pyaudio
+import sys
 
 class Client:
     def __init__(self):
@@ -18,7 +19,7 @@ class Client:
                 print("Couldn't connect to server")
 
         chunk_size = 1024 # 512
-        audio_format = pyaudio.paFloat32
+        audio_format = pyaudio.paInt16
         channels = 1
         rate = 2048
 
@@ -36,7 +37,8 @@ class Client:
     def receive_server_data(self):
         while True:
             try:
-                data = self.s.recv(1024)
+                data = self.s.recv(2096)
+                #print(sys.getsizeof(data))
                 self.playing_stream.write(data)
             except:
                 pass

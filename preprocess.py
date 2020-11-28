@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import butter, sosfilt, sosfreqz
 
+
 ##### The program is written to test the "effectiveness of the custum_filter" function.
 ##### The testing can be done either by already recorded data (rawdata_1.wav, etc) or by live recording using DIY diaphragm.
 
@@ -31,14 +32,16 @@ def custum_filter(raw_data, fs):
     Inputs are raw data chunk and sampling frequency and outpus processed data'''
 
     lowcut = 20
-    highcut = 150
-    order = 4
+    highcut = 180
+    order = 6
 
     ## normalizing the data
-    #raw_data = raw_data/max(raw_data)
+    raw_data = raw_data/max(raw_data)
     processed_data = butter_bandpass_filter(raw_data, lowcut, highcut, fs, order)
-    processed_data = processed_data/max(processed_data)
-    processed_data = processed_data.astype('float32')
+    #processed_data = processed_data/max(abs(processed_data))
+    processed_data = processed_data*10000
+    processed_data = processed_data.astype('int16')
+    
     
     
     return (processed_data)
@@ -70,7 +73,7 @@ def recorded_data_test():
 ############..........define function for live record testing:
 def live_record_test():
     CHUNK = 1028
-    FORMAT = pyaudio.paFloat32
+    FORMAT = pyaudio.paInt16
     CHANNELS = 1
     fs = 2056
     RECORD_SECONDS = 10
@@ -99,13 +102,13 @@ def live_record_test():
         data = stream1.read(CHUNK)
             
     ########################
-        dd = np.fromstring(data, 'Float32')
+        dd = np.frombuffer(data, dtype= np.int16)
         raw_data = np.append(raw_data,dd)
 
         filt_data = custum_filter(dd, fs)
-        #filt_data.tobytes()
-        stream2.write(filt_data)
-        
+        filt_data.tobytes()
+
+        stream2.write(data)
         filt_data_test = np.append(filt_data_test, filt_data)
 
         
@@ -152,9 +155,11 @@ def main():
     ####....play both sounds one by one:
     print("Playing raw_sound")
     sd.play(raw_data,fs)
+    raw_data = raw_data/max(abs(raw_data))
     sd.wait()
 
     print("Playing chunk processed_sound")
+    filt_data_test = filt_data_test/max(abs(filt_data_test))
     sd.play(filt_data_test,fs)
     sd.wait()
 
@@ -164,6 +169,10 @@ def main():
     sd.wait()
 
     print("Finished Testing")
+
+    filt_data_test = filt_data_test.astype('float32')
+    wavfile.write("rec_1.wav", fs, filt_data_test)
+    
 
 if __name__ == "__main__":
     main()
